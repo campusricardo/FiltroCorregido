@@ -1,12 +1,15 @@
-const mongoose = require('mongoose');
-
+const {MongoClient} = require('mongodb');
+require('dotenv').config();
+const url = process.env.MONGO_URI;
+const dbName = 'farmaciaCampus';
+const client = new MongoClient(url);
 const conexionDB = async ()=>{
     try {
-        await mongoose.connect("mongodb+srv://campusricardo2023:12345@cluster0.1iuecvf.mongodb.net/farmaciaCampus", {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log('Database Online');
+       await client.connect();
+       const db = await client.db(dbName);
+       const collection = db.collection('compras');
+       console.log(collection);
+       return collection;
     } catch (error) {
         console.log(error);
         throw new Error(`database can't launch`);

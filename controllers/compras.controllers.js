@@ -1,7 +1,8 @@
+const {conexionDB} = require('./../database/config.js');
 const Medicamentos = require('../models/compras.js');
-
 const medicamentosA = async(req, res) => {
-    const getCompras = await Medicamentos.find({"proveedor.nombre": "ProveedorA"});
+    const xd = await conexionDB();
+    const getCompras = await xd.find({"proveedor.nombre": "ProveedorA"}).toArray();
     const showCompras = getCompras.map((c)=> c.medicamentosComprados);
     console.log(showCompras);
     res.json(
