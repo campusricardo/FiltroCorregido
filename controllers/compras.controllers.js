@@ -1,8 +1,9 @@
 const {conexionDB} = require('./../database/config.js');
-const Medicamentos = require('../models/compras.js');
+
+
 const medicamentosA = async(req, res) => {
-    const xd = await conexionDB();
-    const getCompras = await xd.find({"proveedor.nombre": "ProveedorA"}).toArray();
+    const compras = (await conexionDB()).compras;
+    const getCompras = await compras.find({"proveedor.nombre": "ProveedorA"}).toArray();
     const showCompras = getCompras.map((c)=> c.medicamentosComprados);
     console.log(showCompras);
     res.json(
@@ -12,13 +13,13 @@ const medicamentosA = async(req, res) => {
 }
 
 const proveedorVentas = async(req, res) => {
-    const proveedorA = await Medicamentos.find({"proveedor.nombre": "ProveedorA"});
+    const compras = (await conexionDB()).compras;
+    const proveedorA = await compras.find({"proveedor.nombre": "ProveedorA"}).toArray();
     const proveedorAcantidad = proveedorA.map((e)=> e.medicamentosComprados[0].cantidadComprada);
-    const proveedorB = await Medicamentos.find({"proveedor.nombre": "ProveedorB"});
+    const proveedorB = await compras.find({"proveedor.nombre": "ProveedorB"}).toArray();
     const proveedorBcantidad = proveedorB.map((e)=> e.medicamentosComprados[0].cantidadComprada);
-    const proveedorC = await Medicamentos.find({"proveedor.nombre": "ProveedorC"});
+    const proveedorC = await compras.find({"proveedor.nombre": "ProveedorC"}).toArray();
     const proveedorCcantidad = proveedorC.map((e)=> e.medicamentosComprados[0].cantidadComprada);
-
     let totalA = proveedorAcantidad.reduce((a, b) => a + b, 0);
     let totalB = proveedorBcantidad.reduce((a, b) => a + b, 0);
     let totalC = proveedorCcantidad.reduce((a, b) => a + b, 0);

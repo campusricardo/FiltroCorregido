@@ -7,9 +7,17 @@ const conexionDB = async ()=>{
     try {
        await client.connect();
        const db = await client.db(dbName);
-       const collection = db.collection('compras');
-       console.log(collection);
-       return collection;
+       const collections =  {
+        compras : db.collection('compras'),
+        empleados: db.collection('empleados'),
+        medicamentos: db.collection('medicamentos'),
+        pacientes: db.collection('pacientes'),
+        proveedores: db.collection('proveedores'),
+        ventas: db.collection('ventas')
+
+       };
+       console.log('database connected');
+       return collections;
     } catch (error) {
         console.log(error);
         throw new Error(`database can't launch`);

@@ -1,15 +1,23 @@
-const Ventas = require('../models/ventas.js');
+const {conexionDB} = require('./../database/config.js');
+
 
 const recetas1Enero = async(req, res) => {
-    
-    const getVentas = await Ventas.find({ fechaVenta: { $gt: new Date("2023-01-10T00:00:00.000+00:00") } });
-    res.json(getVentas);
+    try {
+        const Ventas = (await conexionDB()).ventas;
+        const getVentas = await Ventas.find({ fechaVenta: { $gt: new Date("2023-01-10T00:00:00.000+00:00") } }).toArray();
+        res.json(getVentas);
+    } catch (error) {
+        
+    }
+
 }
 
 
 const ventasParacetamol = async(req,res) => {
-
-    const getVentas = await Ventas.find();
+    try {
+        const Ventas = (await conexionDB()).ventas;
+        
+    const getVentas = await Ventas.find().toArray();
     let vendidos = 0;
     const ventas = getVentas.map((e)=> e.medicamentosVendidos);
     const buscandoParacetamol = ventas.map((e)=> { 
@@ -22,12 +30,18 @@ const ventasParacetamol = async(req,res) => {
     res.json({
         cantidad: vendidos
     })
+    } catch (error) {
+        
+    }
 }
 
 const ventasTotal = async(req, res) => {
-    let totalVentas = 0;
+    try {
+        const Ventas = (await conexionDB()).ventas;
+        
+        let totalVentas = 0;
     let arrayWithinanArray = 0;
-    const getVentas = await Ventas.find();
+    const getVentas = await Ventas.find().toArray();
     const ventas = getVentas.map((e)=> {
         const xd = e.medicamentosVendidos;
         const mapventas = xd.map((x)=>{
@@ -52,6 +66,13 @@ const ventasTotal = async(req, res) => {
     res.json({
         totalVentas: totalVentas+ arrayWithinanArray
     })
+
+
+
+    } catch (error) {
+        
+    }
+    
 }
 
 module.exports = {
