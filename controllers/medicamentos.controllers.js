@@ -77,19 +77,51 @@ const medicamentosNVen = async (req, res) => {
     const medicamentos = await Medicamentos.distinct("nombre");
 
     const verficarMedicamentos = medicamentos.map((m) => {
-      for (let i = 0; i > getVentas.length; i++) {
+      for (let i = 0; i < getVentas.length; i++) {
         if (m === getVentas[i]) {
-          return "xd";
+          return "";
         }
       }
-      return "x";
+      return m;
     });
 
-    res.send("xd");
+
+    const medicamentosNcomprados = verficarMedicamentos.filter(function(e) { return e !== '' })
+
+     res.json({
+      medicamentosNcomprados
+     });
   } catch (error) {
     console.log(error);
   }
 };
+
+
+// 11. Número de medicamentos por proveedor.
+
+const medicamentosPproveedor = async(req , res) => {
+  const Medicamentos = (await conexionDB()).medicamentos;
+
+  const proveedorA = await Medicamentos
+  .find({ "proveedor.nombre": "ProveedorA" })
+  .toArray();
+
+  const proveedorB = await Medicamentos
+  .find({ "proveedor.nombre": "ProveedorB" })
+  .toArray();
+
+
+  const proveedorC = await Medicamentos
+  .find({ "proveedor.nombre": "ProveedorC" })
+  .toArray();
+
+  res.json({
+    proveedorA: proveedorA.length,
+    proveedorB: proveedorB.length,
+    proveedorC: proveedorC.length,
+  });
+};
+
 
 module.exports = {
   getMedicamentos,
@@ -97,4 +129,5 @@ module.exports = {
   medicamentosCa1,
   getExpensivest,
   medicamentosNVen,
+  medicamentosPproveedor
 };

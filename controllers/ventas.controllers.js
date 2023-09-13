@@ -71,8 +71,75 @@ const ventasTotal = async (req, res) => {
   } catch (error) {}
 };
 
+// 12. Pacientes que han comprado Paracetamol.
+
+const pacientesCparacetamol = async(req ,res) => {
+  const Ventas = (await conexionDB()).ventas;
+  const ventasParacetamol = (await Ventas.find( {'medicamentosVendidos.nombreMedicamento': 'Paracetamol'}).toArray()).map((e)=> e.paciente);
+  console.log('xd');
+  res.json(ventasParacetamol);
+}
+
+// 14. Obtener el total de medicamentos vendidos en marzo de 2023.
+
+const medicamentosMarzo = async(req ,res ) => {
+  const Ventas = (await conexionDB()).ventas;
+  const ventasMarzo = (await Ventas.find({$and:[{fechaVenta:{$gte: new Date("2023-03-10T00:00:00.000+00:00")}}, {fechaVenta:{$lt: new Date("2023-04-10T00:00:00.000+00:00")}}]}).toArray()).map((e)=> e.medicamentosVendidos[0].cantidadVendida);
+
+  const ventas = ventasMarzo.reduce((inicial, final) => inicial + final, 0)
+
+
+  res.json({
+    ventasMarzo: ventas
+  });
+
+};
+
+// 15. Obtener el medicamento menos vendido en 2023.
+
+const ObtMmenosVendido = async(req ,res ) => {
+  const medicinas = {
+    Paracetamol: 0,
+    Ibuprofeno: 0,
+    Aspirina: 0,
+    Amoxicilina: 0,
+    Cetirizina: 0,
+    Losartan: 0,
+    Metformina: 0,
+    Atorvastatina: 0,
+    Clonazepam: 0,
+    Loratadina: 0
+
+
+  }
+  const Ventas = (await conexionDB()).ventas;
+  const ventas2023 = (await Ventas.find({$and:[{fechaVenta:{$gte: new Date("2023-01-10T00:00:00.000+00:00")}}, {fechaVenta:{$lt: new Date("2024-01-10T00:00:00.000+00:00")}}]}).toArray()).map((e)=> e.medicamentosVendidos);
+
+  ventas2023.forEach((v)=> {
+    if (v.length > 1) {
+      v.forEach((e)=> {
+        medicinas[`${e.nombreMedicamento}`] += e.cantidadVendida;
+      });
+      
+    }
+    medicinas[`${v[0].nombreMedicamento}`] += v[0].cantidadVendida;
+  })
+  const minNumber = Math.min(...(Object.values(medicinas)));
+
+  const medicamentosArray = Object.entries(medicinas);
+
+  const minMedicamentos = medicamentosArray.filter((e) => e[1] === 1)
+
+  res.json(
+   {medicina: minMedicamentos}
+  )
+}
+
 module.exports = {
   recetas1Enero,
   ventasParacetamol,
   ventasTotal,
+  pacientesCparacetamol,
+  medicamentosMarzo,
+  ObtMmenosVendido
 };

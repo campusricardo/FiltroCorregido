@@ -45,7 +45,19 @@ const proveedorVentas = async (req, res) => {
   });
 };
 
+// 13. Proveedores que no han vendido medicamentos en el último año.
+
+const proveeNMA = async(req , res) => {
+  const Compras = (await conexionDB()).compras;
+
+  const comprasM2023 = await Compras.find({fechaCompra:{$lt: new Date("2023-01-00T00:00:00.000+00:00")}}).toArray();
+
+  res.json({proveedoresNoVentas2023:comprasM2023})
+ 
+};
+
 module.exports = {
   medicamentosA,
   proveedorVentas,
+  proveeNMA
 };
