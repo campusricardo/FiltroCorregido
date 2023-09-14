@@ -135,11 +135,70 @@ const ObtMmenosVendido = async(req ,res ) => {
   )
 }
 
+// 17. Promedio de medicamentos comprados por venta.
+
+const promedioMedicamentos = async(req , res ) => {
+  const Ventas = (await conexionDB()).ventas;
+  const precioMedicamentos = (await Ventas.aggregate([ {$project: {medicamentosVendidos: 1, _id: 0}}]).toArray()).map((e)=>{
+    
+    return (e.medicamentosVendidos).map((e)=> e.precio)}).flat(Infinity);
+
+  const promedioMedicamentos = precioMedicamentos.reduce((a , b)=> a + b, 0 ) / precioMedicamentos.length;
+  res.json({precioPromedio: promedioMedicamentos})
+};
+
+// 18. Cantidad de ventas realizadas por cada empleado en 2023.
+
+const ventasEmpleados = async(req , res) => {
+  const Ventas = (await conexionDB()).ventas;
+  const Empleados = (await conexionDB()).empleados;
+  const empleados = (await Empleados.find().toArray()).map((e)=> {return {nombre: e.nombre, ventas: 0} });
+
+  const ventas = await Ventas.find({$and: [{fechaVenta: {$gte: new Date("2023-01-10T00:00:00.000+00:00")}}, {fechaVenta: {$lt: new Date("2024-01-10T00:00:00.000+00:00")}}]}).toArray();
+
+  ventas.forEach((e)=> {
+    for (let i = 0; i < empleados.length; i++) {
+        if (e.empleado.nombre === empleados[i].nombre) {
+          empleados[i].ventas += e.medicamentosVendidos.map((e)=> e.cantidadVendida).reduce((a ,b )=> a + b , 0);
+        }
+
+    }
+  });
+
+  res.json(empleados)
+};
+
+// 20. Empleados que hayan hecho más de 5 ventas en total.
+
+const ventasEmpleados5 = async(req ,res) => {
+  const Ventas = (await conexionDB()).ventas;
+  const Empleados = (await conexionDB()).empleados;
+  const empleados = (await Empleados.find().toArray()).map((e)=> {return {nombre: e.nombre, ventas: 0} });
+
+  const ventas = await Ventas.find().toArray();
+
+  ventas.forEach((e)=> {
+    for (let i = 0; i < empleados.length; i++) {
+        if (e.empleado.nombre === empleados[i].nombre) {
+          empleados[i].ventas += 1;
+        }
+
+    }
+  });
+
+  const empleados5 = empleados.filter((e)=> e.ventas >= 5);
+res.json(empleados5);
+
+};
+
 module.exports = {
   recetas1Enero,
   ventasParacetamol,
   ventasTotal,
   pacientesCparacetamol,
   medicamentosMarzo,
-  ObtMmenosVendido
+  ObtMmenosVendido,
+  promedioMedicamentos,
+  ventasEmpleados,
+  ventasEmpleados5
 };

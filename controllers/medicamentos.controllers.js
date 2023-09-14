@@ -122,12 +122,20 @@ const medicamentosPproveedor = async(req , res) => {
   });
 };
 
+// 19. Obtener todos los medicamentos que expiren en 2024.
 
+const expM2024 = async(req, res ) => {
+  const Medicamentos = (await conexionDB()).medicamentos;
+  const medicamentos = (await Medicamentos.find({$and: [{fechaExpiracion: {$gte: new Date("2024-01-10T00:00:00.000+00:00")}}, {fechaExpiracion: {$lt: new Date("2025-01-10T00:00:00.000+00:00")}}]}).toArray()).map((e)=> e.nombre);
+
+res.json(medicamentos)
+};
 module.exports = {
   getMedicamentos,
   getProveedoresMedicamentos,
   medicamentosCa1,
   getExpensivest,
   medicamentosNVen,
-  medicamentosPproveedor
+  medicamentosPproveedor,
+  expM2024
 };

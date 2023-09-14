@@ -56,8 +56,29 @@ const proveeNMA = async(req , res) => {
  
 };
 
+// 16 .Ganancia total por proveedor en 2023 (asumiendo un campo precioCompra en Compras).
+
+const ganaciasProveedores = async(req ,res ) => {
+  const Compras = (await conexionDB()).compras;
+
+  const proveedorA = (await Compras.find({"proveedor.nombre": "ProveedorA"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
+  const ganaciaProveedorA = (proveedorA.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b)=> a + b , 0);
+
+  const proveedorB = (await Compras.find({"proveedor.nombre": "ProveedorB"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
+  const ganaciaProveedorB = (proveedorB.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b)=> a + b, 0);
+
+  const proveedorC = (await Compras.find({"proveedor.nombre": "ProveedorC"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
+  const ganaciaProveedorC = (proveedorC.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b) =>  a + b, 0);
+  res.json({
+    ganaciaProveedorA,
+    ganaciaProveedorB,
+    ganaciaProveedorC
+  });
+};
+
 module.exports = {
   medicamentosA,
   proveedorVentas,
-  proveeNMA
+  proveeNMA,
+  ganaciasProveedores
 };
