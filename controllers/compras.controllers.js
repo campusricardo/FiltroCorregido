@@ -47,38 +47,90 @@ const proveedorVentas = async (req, res) => {
 
 // 13. Proveedores que no han vendido medicamentos en el último año.
 
-const proveeNMA = async(req , res) => {
+const proveeNMA = async (req, res) => {
   const Compras = (await conexionDB()).compras;
 
-  const comprasM2023 = await Compras.find({fechaCompra:{$lt: new Date("2023-01-00T00:00:00.000+00:00")}}).toArray();
+  const comprasM2023 = await Compras.find({
+    fechaCompra: { $lt: new Date("2023-01-00T00:00:00.000+00:00") },
+  }).toArray();
 
-  res.json({proveedoresNoVentas2023:comprasM2023})
- 
+  res.json({ proveedoresNoVentas2023: comprasM2023 });
 };
 
 // 16 .Ganancia total por proveedor en 2023 (asumiendo un campo precioCompra en Compras).
 
-const ganaciasProveedores = async(req ,res ) => {
+const ganaciasProveedores = async (req, res) => {
   const Compras = (await conexionDB()).compras;
 
-  const proveedorA = (await Compras.find({"proveedor.nombre": "ProveedorA"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
-  const ganaciaProveedorA = (proveedorA.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b)=> a + b , 0);
+  const proveedorA = (
+    await Compras.find({ "proveedor.nombre": "ProveedorA" }).toArray()
+  ).map((e) => e.medicamentosComprados[0]);
+  const ganaciaProveedorA = proveedorA
+    .map((e) => e.cantidadComprada * e.precioCompra)
+    .reduce((a, b) => a + b, 0);
 
-  const proveedorB = (await Compras.find({"proveedor.nombre": "ProveedorB"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
-  const ganaciaProveedorB = (proveedorB.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b)=> a + b, 0);
+  const proveedorB = (
+    await Compras.find({ "proveedor.nombre": "ProveedorB" }).toArray()
+  ).map((e) => e.medicamentosComprados[0]);
+  const ganaciaProveedorB = proveedorB
+    .map((e) => e.cantidadComprada * e.precioCompra)
+    .reduce((a, b) => a + b, 0);
 
-  const proveedorC = (await Compras.find({"proveedor.nombre": "ProveedorC"} ).toArray()).map((e)=> e.medicamentosComprados[0]);
-  const ganaciaProveedorC = (proveedorC.map((e)=> e.cantidadComprada * e.precioCompra)).reduce((a, b) =>  a + b, 0);
+  const proveedorC = (
+    await Compras.find({ "proveedor.nombre": "ProveedorC" }).toArray()
+  ).map((e) => e.medicamentosComprados[0]);
+  const ganaciaProveedorC = proveedorC
+    .map((e) => e.cantidadComprada * e.precioCompra)
+    .reduce((a, b) => a + b, 0);
   res.json({
     ganaciaProveedorA,
     ganaciaProveedorB,
-    ganaciaProveedorC
+    ganaciaProveedorC,
   });
+};
+// 24. Proveedor que ha suministrado más medicamentos en 2023
+
+const proveedor2023 = async (req, res) => {
+  const Compras = (await conexionDB()).compras;
+  const Proveedores = (await conexionDB()).proveedores;
+
+  const proveedores = (
+    await Proveedores.aggregate([
+      {
+        $project: { nombre: 1, _id: 0 },
+      },
+    ]).toArray()
+  ).map((e) => {
+    return { nombre: e.nombre, medicamentos: 0 };
+  });
+
+  const compras = await Compras.find().toArray();
+
+  compras.forEach((e) => {
+    for (let i = 0; i < proveedores.length; i++) {
+      if (e.proveedor.nombre === proveedores[i].nombre) {
+        proveedores[i].medicamentos +=
+          e.medicamentosComprados[0].cantidadComprada;
+        break;
+      }
+    }
+  });
+
+  let maxMedicamentos = -Infinity; // Inicializar con un valor muy bajo
+
+  for (let i = 0; i < proveedores.length; i++) {
+    if (proveedores[i].medicamentos > maxMedicamentos) {
+      maxMedicamentos = proveedores[i];
+    }
+  }
+
+  res.json(maxMedicamentos);
 };
 
 module.exports = {
   medicamentosA,
   proveedorVentas,
   proveeNMA,
-  ganaciasProveedores
+  ganaciasProveedores,
+  proveedor2023,
 };

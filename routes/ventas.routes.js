@@ -12,6 +12,7 @@ const {
   ventasEmpleados5,
   nuncaVendidos,
   pacienteMasDinero,
+  empleadosNoVentas,
 } = require("../controllers/ventas.controllers.js");
 
 const router = Router();
@@ -27,5 +28,6 @@ router.get("/ventas/empleados", ventasEmpleados);
 router.get("/ventas/5", ventasEmpleados5);
 router.get("/ventas/nunca", nuncaVendidos);
 router.get("/ventas/mas", pacienteMasDinero);
+router.get("/ventas/empleados/no", empleadosNoVentas);
 
 module.exports = router;

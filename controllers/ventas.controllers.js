@@ -261,6 +261,23 @@ const pacienteMasDinero = async (req, res) => {
   const Ventas = (await conexionDB()).ventas;
 };
 
+// 23. Empleados que no han realizado ninguna venta en 2023.
+const empleadosNoVentas = async (req, res) => {
+  const Ventas = (await conexionDB()).ventas;
+  const Empleados = (await conexionDB()).empleados;
+  const ventasEmpleados = (
+    await Ventas.aggregate([
+      { $project: { "empleado.nombre": 1, _id: 0 } },
+    ]).toArray()
+  ).map((e) => e.empleado.nombre);
+
+  const empleadosqueVendieron = Array.from(new Set(ventasEmpleados));
+  const empleados = await Empleados.find({
+    nombre: { $nin: empleadosqueVendieron },
+  }).toArray();
+  res.json(empleados);
+};
+
 module.exports = {
   recetas1Enero,
   ventasParacetamol,
@@ -273,4 +290,5 @@ module.exports = {
   ventasEmpleados5,
   nuncaVendidos,
   pacienteMasDinero,
+  empleadosNoVentas,
 };
