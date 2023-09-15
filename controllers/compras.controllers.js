@@ -127,10 +127,43 @@ const proveedor2023 = async (req, res) => {
   res.json(maxMedicamentos);
 };
 
+// 28. Número total de proveedores que suministraron medicamentos en 2023.
+
+const proveedoresMedicamentos2023 = async (req , res) => {
+  const Compras = (await conexionDB()).compras;
+
+  const comprasProveedores = await Compras.aggregate([
+    {
+      $match: {
+        "fechaCompra": {
+          $gte: new Date("2023-01-01T00:00:00.000Z"),
+          $lt: new Date("2024-01-01T00:00:00.000Z")
+        }
+      }
+    },
+    {
+      $group: {
+        _id: "$proveedor.nombre",
+        proveedor: { $first: "$proveedor" }
+      }
+    },
+    {
+      $replaceRoot: { newRoot: "$proveedor" }
+    }
+  ]).toArray();
+
+  res.json(comprasProveedores);
+  
+};
+
+
+
+
 module.exports = {
   medicamentosA,
   proveedorVentas,
   proveeNMA,
   ganaciasProveedores,
   proveedor2023,
+  proveedoresMedicamentos2023
 };

@@ -130,6 +130,29 @@ const expM2024 = async(req, res ) => {
 
 res.json(medicamentos)
 };
+
+// 29. Proveedores de los medicamentos con menos de 50 unidades en stock.
+
+const proveedoresStock = async (req, res) => {
+  const Medicamentos = (await conexionDB()).medicamentos;
+
+  const proveedoresMedicamentos50 = await Medicamentos.aggregate([
+    {
+      $match: {
+        "stock": { $lt: 50 }
+      }
+    },
+    {
+      $group: {
+        _id: "$proveedor.nombre"
+      }
+    }
+  ])
+  .toArray();
+  res.json(proveedoresMedicamentos50)
+
+};
+
 module.exports = {
   getMedicamentos,
   getProveedoresMedicamentos,
@@ -137,5 +160,6 @@ module.exports = {
   getExpensivest,
   medicamentosNVen,
   medicamentosPproveedor,
-  expM2024
+  expM2024,
+  proveedoresStock
 };

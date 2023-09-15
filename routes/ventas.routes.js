@@ -13,6 +13,10 @@ const {
   nuncaVendidos,
   pacienteMasDinero,
   empleadosNoVentas,
+  pacientesParacetamol,
+  empleadosmenos5,
+  getMedicamentosPORmes,
+  pacientesNoCompras2023
 } = require("../controllers/ventas.controllers.js");
 
 const router = Router();
@@ -29,5 +33,9 @@ router.get("/ventas/5", ventasEmpleados5);
 router.get("/ventas/nunca", nuncaVendidos);
 router.get("/ventas/mas", pacienteMasDinero);
 router.get("/ventas/empleados/no", empleadosNoVentas);
+router.get("/ventas/pacientes/paracetamol/2023", pacientesParacetamol);
+router.get("/ventas/empleados/5", empleadosmenos5);
+router.get("/ventas/por/mes", getMedicamentosPORmes);
+router.get("/ventas/pacientes/no", pacientesNoCompras2023);
 
 module.exports = router;

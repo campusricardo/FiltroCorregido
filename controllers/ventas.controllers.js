@@ -258,7 +258,36 @@ const nuncaVendidos = async (req, res) => {
 // 22. Paciente que ha gastado más dinero en 2023.
 
 const pacienteMasDinero = async (req, res) => {
+  
   const Ventas = (await conexionDB()).ventas;
+  const ventas = await Ventas.aggregate([
+    {
+      $unwind: "$medicamentosVendidos"
+    },
+    {
+      $group: {
+        _id: "$paciente",
+        totalVenta: {
+          $sum: { $multiply: ["$medicamentosVendidos.cantidadVendida", "$medicamentosVendidos.precio"] }
+        }
+      }
+    },
+    {
+      $sort: { totalVenta: -1 }
+    },
+    {
+      $limit: 1
+    },
+    {
+      $project: {
+        _id: 0,
+        paciente: "$_id",
+        totalVenta: 1
+      }
+    }
+  ]).toArray();
+  res.json(ventas);
+
 };
 
 // 23. Empleados que no han realizado ninguna venta en 2023.
@@ -278,6 +307,142 @@ const empleadosNoVentas = async (req, res) => {
   res.json(empleados);
 };
 
+// 26. Total de medicamentos vendidos por mes en 2023.
+
+const getMedicamentosPORmes = async(req, res) => {
+ const Ventas = (await conexionDB()).ventas;
+
+ const pipeline = [
+  {
+    $unwind: "$medicamentosVendidos"
+  },
+  {
+    $project: {
+      _id: 0,
+      mes: { $month: "$fechaVenta" },
+      nombreMedicamento: "$medicamentosVendidos.nombreMedicamento"
+    }
+  },
+  {
+    $group: {
+      _id: {
+        mes: "$mes",
+        nombreMedicamento: "$nombreMedicamento"
+      },
+      totalCantidadVendida: { $sum: 1 }
+    }
+  },
+  {
+    $sort: { "_id.mes": 1 }
+  }
+];
+
+const result = await Ventas.aggregate(pipeline).toArray();
+
+res.json(result);
+
+};
+
+// 25. Pacientes que compraron el medicamento “Paracetamol” en 2023.
+
+const pacientesParacetamol = async(req, res) => {
+  const Ventas = (await conexionDB()).ventas;
+    const query = {
+      "fechaVenta": {
+        $gte: new Date("2023-01-01T00:00:00.000Z"),
+        $lt: new Date("2024-01-01T00:00:00.000Z")
+      },
+      "medicamentosVendidos.nombreMedicamento": "Paracetamol"
+    };
+
+    // Projection to exclude _id and include paciente
+    const projection = { _id: 0, paciente: 1 };
+
+    // Execute the find query
+    const result = await Ventas.find(query).project(projection).toArray();
+
+  res.json(result);
+
+};
+
+
+// 27. Empleados con menos de 5 Ventas
+
+const empleadosmenos5 = async (req ,res ) => {
+
+  const Ventas = (await conexionDB()).ventas;
+
+  const ventas = await Ventas.aggregate([
+    {
+      $match: {
+        "empleado.cargo": "Vendedor",
+        "medicamentosVendidos.cantidadVendida": { $lt: 5 }
+      }
+    },
+    {
+      $group: {
+        _id: "$empleado.nombre",
+      }
+    },
+    {
+      $sort: { totalCantidadVendida: 1 }
+    }
+  ]).toArray();
+  
+res.json(ventas);
+};
+
+// 30. Pacientes que no han comprado ningún medicamento en 2023.
+
+const pacientesNoCompras2023 = async (req, res) => {
+  const Pacientes = (await conexionDB()).pacientes;
+  const Ventas = (await conexionDB()).ventas;
+  const pacientes = await Pacientes.aggregate([
+    {
+      $project: {
+        _id: 0,
+        nombre: 1
+      }
+    }
+  ])
+  .toArray();
+
+  const searchPacientes = await Ventas.aggregate([
+    {
+      $match: {
+        "fechaVenta": {
+          $gte: new Date("2023-01-01T00:00:00.000Z"),
+          $lt: new Date("2024-01-01T00:00:00.000Z")
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: "pacientes",
+        localField: "paciente.nombre",
+        foreignField: "nombre",
+        as: "matching_pacientes"
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        "nombre": "$paciente.nombre",
+        "existsInPacientes": {
+          $in: ["$paciente.nombre", pacientes.map(n => n.nombre)]
+        }
+      }
+    },
+    {
+      $match: {
+        "existsInPacientes": false
+      }
+    }
+  ])
+  .toArray();
+  res.json(searchPacientes);
+};
+
 module.exports = {
   recetas1Enero,
   ventasParacetamol,
@@ -291,4 +456,8 @@ module.exports = {
   nuncaVendidos,
   pacienteMasDinero,
   empleadosNoVentas,
+  pacientesParacetamol,
+  empleadosmenos5,
+  getMedicamentosPORmes,
+  pacientesNoCompras2023
 };
