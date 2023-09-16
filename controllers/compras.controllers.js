@@ -4,11 +4,20 @@ const { conexionDB } = require("./../database/config.js");
 
 const medicamentosA = async (req, res) => {
   const compras = (await conexionDB()).compras;
-  const getCompras = await compras
-    .find({ "proveedor.nombre": "ProveedorA" })
-    .toArray();
-  const showCompras = getCompras.map((c) => c.medicamentosComprados);
-  console.log(showCompras);
+  const showCompras = await compras.aggregate([
+    {
+      $match: {
+        "proveedor.nombre": "ProveedorA"
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        medicamentosComprados: 1
+      }
+    }
+  ]).toArray();
+  
   res.json(showCompras);
 };
 
@@ -16,33 +25,31 @@ const medicamentosA = async (req, res) => {
 
 const proveedorVentas = async (req, res) => {
   const compras = (await conexionDB()).compras;
-  const proveedorA = await compras
-    .find({ "proveedor.nombre": "ProveedorA" })
-    .toArray();
-  const proveedorAcantidad = proveedorA.map(
-    (e) => e.medicamentosComprados[0].cantidadComprada
-  );
-  const proveedorB = await compras
-    .find({ "proveedor.nombre": "ProveedorB" })
-    .toArray();
-  const proveedorBcantidad = proveedorB.map(
-    (e) => e.medicamentosComprados[0].cantidadComprada
-  );
-  const proveedorC = await compras
-    .find({ "proveedor.nombre": "ProveedorC" })
-    .toArray();
-  const proveedorCcantidad = proveedorC.map(
-    (e) => e.medicamentosComprados[0].cantidadComprada
-  );
-  let totalA = proveedorAcantidad.reduce((a, b) => a + b, 0);
-  let totalB = proveedorBcantidad.reduce((a, b) => a + b, 0);
-  let totalC = proveedorCcantidad.reduce((a, b) => a + b, 0);
 
-  res.json({
-    totalVentasA: totalA,
-    totalVentasB: totalB,
-    totalVentasC: totalC,
-  });
+const resultado = await compras.aggregate([
+  {
+    $unwind: "$medicamentosComprados"
+  },
+  {
+    $group: {
+      _id: "$proveedor.nombre",
+      totalCantidadComprada: {
+        $sum: "$medicamentosComprados.cantidadComprada"
+      }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      proveedor: "$_id",
+      totalCantidadComprada: 1
+    }
+  }
+]).toArray();
+
+res.json(resultado);
+
+  
 };
 
 // 13. Proveedores que no han vendido medicamentos en el último año.
@@ -60,71 +67,63 @@ const proveeNMA = async (req, res) => {
 // 16 .Ganancia total por proveedor en 2023 (asumiendo un campo precioCompra en Compras).
 
 const ganaciasProveedores = async (req, res) => {
-  const Compras = (await conexionDB()).compras;
+  const compras = (await conexionDB()).compras;
 
-  const proveedorA = (
-    await Compras.find({ "proveedor.nombre": "ProveedorA" }).toArray()
-  ).map((e) => e.medicamentosComprados[0]);
-  const ganaciaProveedorA = proveedorA
-    .map((e) => e.cantidadComprada * e.precioCompra)
-    .reduce((a, b) => a + b, 0);
-
-  const proveedorB = (
-    await Compras.find({ "proveedor.nombre": "ProveedorB" }).toArray()
-  ).map((e) => e.medicamentosComprados[0]);
-  const ganaciaProveedorB = proveedorB
-    .map((e) => e.cantidadComprada * e.precioCompra)
-    .reduce((a, b) => a + b, 0);
-
-  const proveedorC = (
-    await Compras.find({ "proveedor.nombre": "ProveedorC" }).toArray()
-  ).map((e) => e.medicamentosComprados[0]);
-  const ganaciaProveedorC = proveedorC
-    .map((e) => e.cantidadComprada * e.precioCompra)
-    .reduce((a, b) => a + b, 0);
-  res.json({
-    ganaciaProveedorA,
-    ganaciaProveedorB,
-    ganaciaProveedorC,
-  });
+  const resultado = await compras.aggregate([
+    {
+      $unwind: "$medicamentosComprados"
+    },
+    {
+      $group: {
+        _id: "$proveedor.nombre",
+        totalCompras: {
+          $sum: {
+            $multiply: ["$medicamentosComprados.cantidadComprada", "$medicamentosComprados.precioCompra"]
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        proveedor: "$_id",
+        totalCompras: 1
+      }
+    }
+  ]).toArray();
+  
+  res.json(resultado);
+  
 };
 // 24. Proveedor que ha suministrado más medicamentos en 2023
 
 const proveedor2023 = async (req, res) => {
-  const Compras = (await conexionDB()).compras;
-  const Proveedores = (await conexionDB()).proveedores;
+  const compras = (await conexionDB()).compras;
 
-  const proveedores = (
-    await Proveedores.aggregate([
-      {
-        $project: { nombre: 1, _id: 0 },
-      },
-    ]).toArray()
-  ).map((e) => {
-    return { nombre: e.nombre, medicamentos: 0 };
-  });
-
-  const compras = await Compras.find().toArray();
-
-  compras.forEach((e) => {
-    for (let i = 0; i < proveedores.length; i++) {
-      if (e.proveedor.nombre === proveedores[i].nombre) {
-        proveedores[i].medicamentos +=
-          e.medicamentosComprados[0].cantidadComprada;
-        break;
+  const resultado = await compras.aggregate([
+    {
+      $unwind: "$medicamentosComprados"
+    },
+    {
+      $group: {
+        _id: "$proveedor.nombre",
+        totalCantidadComprada: {
+          $sum: "$medicamentosComprados.cantidadComprada"
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        proveedor: "$_id",
+        totalCantidadComprada: 1
       }
     }
-  });
+  ]).toArray();
 
-  let maxMedicamentos = -Infinity; // Inicializar con un valor muy bajo
-
-  for (let i = 0; i < proveedores.length; i++) {
-    if (proveedores[i].medicamentos > maxMedicamentos) {
-      maxMedicamentos = proveedores[i];
-    }
-  }
-
-  res.json(maxMedicamentos);
+  const result = Math.max(...resultado.map(e=> e.totalCantidadComprada));
+  const result2 = resultado.filter(x=> x.totalCantidadComprada===result)
+  res.json(result2);
 };
 
 // 28. Número total de proveedores que suministraron medicamentos en 2023.

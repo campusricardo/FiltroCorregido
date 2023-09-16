@@ -13,7 +13,6 @@ const router = Router();
 
 router.get("/compras/A", medicamentosA);
 router.get("/compras/prov", proveedorVentas);
-router.get("/compras/prov", proveedorVentas);
 router.get("/compras/provnoventas", proveeNMA);
 router.get("/compras/ganancias", ganaciasProveedores);
 router.get("/compras/proveeodor/mas", proveedor2023);

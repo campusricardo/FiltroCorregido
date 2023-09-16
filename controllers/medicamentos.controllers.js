@@ -17,15 +17,14 @@ const getMedicamentos = async (req, res) => {
 
 // 2. Listar los proveedores con su información de contacto en medicamentos.
 
-const getProveedoresMedicamentos = async (req, res) => {
+const getProveedoresMedicamentos = async (req, res) => {  
   try {
     const Medicamentos = (await conexionDB()).medicamentos;
-    const getMedicamentos = await Medicamentos.find().toArray();
-    const getProveedores = getMedicamentos.map((e) => {
-      return e.proveedor;
-    });
-    console.log(getProveedores);
-    res.json(getProveedores);
+
+const uniqueProveedores = await Medicamentos.distinct("proveedor");
+
+res.json(uniqueProveedores);
+
   } catch (error) {
     console.log(error);
     throw new Error();
@@ -37,12 +36,19 @@ const getProveedoresMedicamentos = async (req, res) => {
 const medicamentosCa1 = async (req, res) => {
   try {
     const Medicamentos = (await conexionDB()).medicamentos;
-    // No hay  ningun medicamento que se caduque antes del uno de enero
-    const medicamentosCa = await Medicamentos.find({
-      fechaExpiracion: { $lt: new Date("2024-01-10T00:00:00.000+00:00") },
-    }).toArray();
 
-    res.json(medicamentosCa);
+const resultado = await Medicamentos.aggregate([
+  {
+    $match: {
+      fechaExpiracion: {
+        $lt: new Date("2024-01-01T00:00:00.000+00:00")
+      }
+    }
+  }
+]).toArray();
+
+res.json(resultado);
+
   } catch (error) {
     console.log(error);
     throw new Error();
@@ -53,13 +59,22 @@ const medicamentosCa1 = async (req, res) => {
 const getExpensivest = async (req, res) => {
   try {
     const Medicamentos = (await conexionDB()).medicamentos;
-    const medicamentoMax = await Medicamentos.find()
-      .sort({ precio: -1 })
-      .limit(1)
-      .toArray();
-    res.json({
-      expensivest: medicamentoMax,
-    });
+
+const resultado = await Medicamentos.aggregate([
+  {
+    $sort: {
+      precio: -1
+    }
+  },
+  {
+    $limit: 1
+  }
+]).toArray();
+
+res.json({
+  expensivest: resultado
+});
+
   } catch (error) {
     throw new Error();
   }
@@ -68,29 +83,36 @@ const getExpensivest = async (req, res) => {
 const medicamentosNVen = async (req, res) => {
   try {
     const Ventas = (await conexionDB()).ventas;
-    const Medicamentos = (await conexionDB()).medicamentos;
+const Medicamentos = (await conexionDB()).medicamentos;
 
-    const getVentas = await Ventas.distinct(
-      "medicamentosVendidos.nombreMedicamento"
-    );
+const resultado = await Medicamentos.aggregate([
+  {
+    $lookup: {
+      from: "ventas",
+      localField: "nombre",
+      foreignField: "medicamentosVendidos.nombreMedicamento",
+      as: "ventas"
+    }
+  },
+  {
+    $match: {
+      ventas: { $size: 0 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      medicamentoNoVendido: "$nombre"
+    }
+  }
+]).toArray();
 
-    const medicamentos = await Medicamentos.distinct("nombre");
+const medicamentosNoVendidos = resultado.map(item => item.medicamentoNoVendido);
 
-    const verficarMedicamentos = medicamentos.map((m) => {
-      for (let i = 0; i < getVentas.length; i++) {
-        if (m === getVentas[i]) {
-          return "";
-        }
-      }
-      return m;
-    });
+res.json({
+  medicamentosNoVendidos
+});
 
-
-    const medicamentosNcomprados = verficarMedicamentos.filter(function(e) { return e !== '' })
-
-     res.json({
-      medicamentosNcomprados
-     });
   } catch (error) {
     console.log(error);
   }
