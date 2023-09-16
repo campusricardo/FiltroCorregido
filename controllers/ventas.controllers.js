@@ -379,36 +379,35 @@ res.json(empleadosSinVentas2023);
 // 26. Total de medicamentos vendidos por mes en 2023.
 
 const getMedicamentosPORmes = async(req, res) => {
- const Ventas = (await conexionDB()).ventas;
+  const Ventas = (await conexionDB()).ventas;
 
- const pipeline = [
-  {
-    $unwind: "$medicamentosVendidos"
-  },
-  {
-    $project: {
-      _id: 0,
-      mes: { $month: "$fechaVenta" },
-      nombreMedicamento: "$medicamentosVendidos.nombreMedicamento"
+  const resultado = await Ventas.aggregate([
+    {
+      $project: {
+        month: { $month: "$fechaVenta" },
+        cantidadVendida: { $sum: "$medicamentosVendidos.cantidadVendida" }
+      }
+    },
+    {
+      $group: {
+        _id: "$month",
+        totalCantidadVendida: { $sum: "$cantidadVendida" }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    },
+    {
+      $project: {
+        _id: 0,
+        month: "$_id",
+        totalCantidadVendida: 1
+      }
     }
-  },
-  {
-    $group: {
-      _id: {
-        mes: "$mes",
-        nombreMedicamento: "$nombreMedicamento"
-      },
-      totalCantidadVendida: { $sum: 1 }
-    }
-  },
-  {
-    $sort: { "_id.mes": 1 }
-  }
-];
-
-const result = await Ventas.aggregate(pipeline).toArray();
-
-res.json(result);
+  ]).toArray();
+  
+  res.json(resultado);
+  
 
 };
 
@@ -512,6 +511,212 @@ const pacientesNoCompras2023 = async (req, res) => {
   res.json(searchPacientes);
 };
 
+// 31. Medicamentos que han sido vendidos cada mes del año 2023.
+
+const medicamentosVendidosMes = async(req ,res) => {
+  const Ventas = (await conexionDB()).ventas;
+
+  const pipeline = [
+   {
+     $unwind: "$medicamentosVendidos"
+   },
+   {
+     $project: {
+       _id: 0,
+       mes: { $month: "$fechaVenta" },
+       nombreMedicamento: "$medicamentosVendidos.nombreMedicamento"
+     }
+   },
+   {
+     $group: {
+       _id: {
+         mes: "$mes",
+         nombreMedicamento: "$nombreMedicamento"
+       },
+       totalCantidadVendida: { $sum: 1 }
+     }
+   },
+   {
+     $sort: { "_id.mes": 1 }
+   }
+ ];
+ 
+ const result = await Ventas.aggregate(pipeline).toArray();
+ 
+ res.json(result);
+};
+
+// 32. Empleado que ha vendido la mayor cantidad de medicamentos distintos en 2023.
+
+const empleadosDistintos = async(req, res) => {
+  const Ventas = (await conexionDB()).ventas;
+
+const resultado = await Ventas.aggregate([
+  {
+    $unwind: "$medicamentosVendidos"
+  },
+  {
+    $group: {
+      _id: {
+        empleado: "$empleado.nombre",
+        medicamento: "$medicamentosVendidos.nombreMedicamento"
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$_id.empleado",
+      totalProductosVendidos: { $sum: 1 }
+    }
+  },
+  {
+    $sort: { totalProductosVendidos: -1 }
+  },
+  {
+    $limit: 1
+  },
+  {
+    $project: {
+      _id: 0,
+      empleado: "$_id",
+      totalProductosVendidos: 1
+    }
+  }
+]).toArray();
+
+res.json(resultado[0]);
+
+};
+// 33. Total gastado por cada paciente en 2023.
+
+const pacientesGastos = async(req, res) => { 
+  const Ventas = (await conexionDB()).ventas;
+
+  const resultado = await Ventas.aggregate([
+    {
+      $unwind: "$medicamentosVendidos"
+    },
+    {
+      $group: {
+        _id: "$paciente.nombre",
+        totalGastado: {
+          $sum: { $multiply: ["$medicamentosVendidos.cantidadVendida", "$medicamentosVendidos.precio"] }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        paciente: "$_id",
+        totalGastado: 1
+      }
+    }
+  ]).toArray();
+  
+  res.json(resultado);
+  
+
+};
+
+// 34. Medicamentos que no han sido vendidos en 2023.
+
+const medicamentosNoVendidos2023 = async (req, res) => {
+  const Medicamentos = (await conexionDB()).medicamentos;
+  const Ventas = (await conexionDB()).ventas;
+  
+  const medicamentosVendidosEn2023 = await Ventas.distinct("medicamentosVendidos.nombreMedicamento", {
+    fechaVenta: {
+      $gte: new Date("2023-01-01"),
+      $lte: new Date("2023-12-31")
+    }
+  });
+  
+  const medicamentosNoVendidosEn2023 = await Medicamentos.aggregate([
+    {
+      $match: {
+        nombre: {
+          $nin: medicamentosVendidosEn2023
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        nombre: 1
+      }
+    }
+  ]).toArray();
+  
+  res.json(medicamentosNoVendidosEn2023);
+  
+};
+
+// 36 . Total de medicamentos vendidos en el primer trimestre de 2023.
+
+const medicamentosTrimestre = async (req , res) => {
+  const Ventas = (await conexionDB()).ventas;
+
+  const resultado = await Ventas.aggregate([
+    {
+      $match: {
+        fechaVenta: {
+          $gte: new Date("2023-01-01"),
+          $lte: new Date("2023-03-31")
+        }
+      }
+    },
+    {
+      $unwind: "$medicamentosVendidos"
+    },
+    {
+      $group: {
+        _id: null,
+        totalMedicamentosVendidos: {
+          $sum: "$medicamentosVendidos.cantidadVendida"
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        totalMedicamentosVendidos: 1
+      }
+    }
+  ]).toArray();
+  
+  res.json(resultado[0]);
+  
+};
+// 37. Empleados que no realizaron ventas en abril de 2023.
+
+const medicamentosAbril = async (req, res) => {
+  const Ventas = (await conexionDB()).ventas;
+
+  const resultado = await Ventas.aggregate([
+    {
+      $match: {
+        fechaVenta: {
+          $gte: new Date("2023-04-01"),
+          $lte: new Date("2023-04-30")
+        }
+      }
+    },
+    {
+      $group: {
+        _id: "$empleado.nombre"
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        empleado: "$_id"
+      }
+    }
+  ]).toArray();
+  
+  res.json(resultado);
+  
+};
 module.exports = {
   recetas1Enero,
   ventasParacetamol,
@@ -528,5 +733,11 @@ module.exports = {
   pacientesParacetamol,
   empleadosmenos5,
   getMedicamentosPORmes,
-  pacientesNoCompras2023
+  pacientesNoCompras2023,
+  medicamentosVendidosMes,
+  empleadosDistintos,
+  pacientesGastos,
+  medicamentosNoVendidos2023,
+  medicamentosTrimestre,
+  medicamentosAbril
 };

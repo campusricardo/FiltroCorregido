@@ -156,7 +156,54 @@ const proveedoresMedicamentos2023 = async (req , res) => {
 };
 
 
+// 35. Proveedores que han suministrado al menos 5 medicamentos diferentes en 2023.
 
+const proveedores5diferentes = async (req , res) => {
+  const Compras = (await conexionDB()).compras;
+
+  const resultado = await Compras.aggregate([
+    {
+      $unwind: "$medicamentosComprados"
+    },
+    {
+      $group: {
+        _id: {
+          proveedorId: "$proveedor.nombre",
+          medicamento: "$medicamentosComprados.nombreMedicamento"
+        }
+      }
+    },
+    {
+      $group: {
+        _id: "$_id.proveedorId",
+        totalMedicamentos: { $sum: 1 }
+      }
+    },
+    {
+      $match: {
+        totalMedicamentos: 5
+      }
+    },
+    {
+      $lookup: {
+        from: "proveedores",
+        localField: "_id",
+        foreignField: "nombre",
+        as: "proveedorInfo"
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        proveedor: "$_id",
+        proveedorInfo: 1
+      }
+    }
+  ]).toArray();
+  
+  res.json(resultado);
+  
+};
 
 module.exports = {
   medicamentosA,
@@ -164,5 +211,6 @@ module.exports = {
   proveeNMA,
   ganaciasProveedores,
   proveedor2023,
-  proveedoresMedicamentos2023
+  proveedoresMedicamentos2023,
+  proveedores5diferentes
 };

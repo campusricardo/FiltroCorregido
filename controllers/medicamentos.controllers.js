@@ -175,6 +175,22 @@ const proveedoresStock = async (req, res) => {
 
 };
 
+// 38. Medicamentos con un precio mayor a 50 y un stock menor a 100.
+
+const medicamentosPrecioStock = async (req, res) => {
+const Medicamentos = (await conexionDB()).medicamentos;
+
+const medicamentos = await Medicamentos.aggregate([
+  {
+    $match: {
+      precio: {$gt: 50},
+      stock: {$lt: 100}
+    }
+  }
+]).toArray();
+res.json(medicamentos);
+};
+
 module.exports = {
   getMedicamentos,
   getProveedoresMedicamentos,
@@ -183,5 +199,6 @@ module.exports = {
   medicamentosNVen,
   medicamentosPproveedor,
   expM2024,
-  proveedoresStock
+  proveedoresStock,
+  medicamentosPrecioStock
 };

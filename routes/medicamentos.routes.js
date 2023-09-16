@@ -8,7 +8,8 @@ const {
   medicamentosNVen,
   medicamentosPproveedor,
   expM2024,
-  proveedoresStock
+  proveedoresStock,
+  medicamentosPrecioStock
 } = require("../controllers/medicamentos.controllers.js");
 
 const router = Router();
@@ -21,4 +22,5 @@ router.get("/medicamentos/novendidos", medicamentosNVen);
 router.get("/medicamentos/nproveedores", medicamentosPproveedor);
 router.get("/medicamentos/exp/2024", expM2024);
 router.get("/medicamentos/menos/50", proveedoresStock);
+router.get("/medicamentos/precio/stock", medicamentosPrecioStock);
 module.exports = router;
